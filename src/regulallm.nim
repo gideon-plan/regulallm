@@ -2,5 +2,5 @@
 
 {.experimental: "strict_funcs".}
 
-import regulallm/[dispatch, validate, confidence, guard, session, lattice]
-export dispatch, validate, confidence, guard, session, lattice
+import regulallm/[dispatch, validate, confidence, guard, session]
+export dispatch, validate, confidence, guard, session

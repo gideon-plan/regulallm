@@ -5,7 +5,7 @@
 {.experimental: "strict_funcs".}
 
 import std/tables
-import lattice, validate
+import basis/code/choice, validate
 
 # =====================================================================================================================
 # Types
@@ -66,10 +66,10 @@ proc evaluate_guard*(guard: Guard, response: string, facts: seq[ParsedFact]): Gu
     check_max_length(response, guard.max_chars)
 
 proc evaluate_guards*(guards: seq[Guard], response: string,
-                      facts: seq[ParsedFact]): Result[void, BridgeError] =
+                      facts: seq[ParsedFact]): Choice[bool] =
   ## Evaluate all guards. Returns bad on first failure.
   for g in guards:
     let r = evaluate_guard(g, response, facts)
     if not r.passed:
-      return Result[void, BridgeError].bad(BridgeError(msg: r.reason))
-  Result[void, BridgeError](ok: true)
+      return bad[bool]("regulallm", r.reason)
+  good(true)

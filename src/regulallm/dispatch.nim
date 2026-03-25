@@ -5,7 +5,7 @@
 {.experimental: "strict_funcs".}
 
 import std/tables
-import lattice
+import basis/code/choice
 
 # =====================================================================================================================
 # Types
@@ -18,7 +18,7 @@ type
     prompt*: string
     confidence*: float64
 
-  InferenceFn* = proc(prompt: string): Result[string, BridgeError] {.raises: [].}
+  InferenceFn* = proc(prompt: string): Choice[string] {.raises: [].}
     ## Function that runs LLM inference and returns generated text.
 
 # =====================================================================================================================
@@ -31,6 +31,6 @@ proc create_dispatch*(rule_name: string, bindings: Table[string, string],
                   prompt: prompt, confidence: confidence)
 
 proc execute_dispatch*(request: DispatchRequest, inference_fn: InferenceFn
-                      ): Result[string, BridgeError] =
+                      ): Choice[string] =
   ## Send prompt to LLM and return response.
   inference_fn(request.prompt)

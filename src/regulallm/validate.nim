@@ -3,7 +3,7 @@
 {.experimental: "strict_funcs".}
 
 import std/[strutils, tables]
-import lattice
+import basis/code/choice
 
 # =====================================================================================================================
 # Types
@@ -14,14 +14,14 @@ type
     fact_type*: string
     fields*: Table[string, string]
 
-  ValidateFn* = proc(facts: seq[ParsedFact]): Result[seq[ParsedFact], BridgeError] {.raises: [].}
+  ValidateFn* = proc(facts: seq[ParsedFact]): Choice[seq[ParsedFact]] {.raises: [].}
     ## Function that validates parsed facts against guard rules.
 
 # =====================================================================================================================
 # Parsing
 # =====================================================================================================================
 
-proc parse_kv_response*(response: string, fact_type: string): Result[seq[ParsedFact], BridgeError] =
+proc parse_kv_response*(response: string, fact_type: string): Choice[seq[ParsedFact]] =
   ## Parse LLM response as key=value lines into facts.
   ## Expected format: one key=value pair per line.
   var facts: seq[ParsedFact]
@@ -40,10 +40,10 @@ proc parse_kv_response*(response: string, fact_type: string): Result[seq[ParsedF
       current_fields[key] = val
   if current_fields.len > 0:
     facts.add(ParsedFact(fact_type: fact_type, fields: current_fields))
-  Result[seq[ParsedFact], BridgeError].good(facts)
+  good(facts)
 
 proc parse_csv_response*(response: string, fact_type: string,
-                         headers: seq[string]): Result[seq[ParsedFact], BridgeError] =
+                         headers: seq[string]): Choice[seq[ParsedFact]] =
   ## Parse LLM response as CSV lines into facts.
   var facts: seq[ParsedFact]
   for line in response.splitLines():
@@ -55,4 +55,4 @@ proc parse_csv_response*(response: string, fact_type: string,
     for i, h in headers:
       fields[h] = values[i].strip()
     facts.add(ParsedFact(fact_type: fact_type, fields: fields))
-  Result[seq[ParsedFact], BridgeError].good(facts)
+  good(facts)

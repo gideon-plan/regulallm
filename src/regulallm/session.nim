@@ -2,14 +2,18 @@
 
 {.experimental: "strict_funcs".}
 
-import lattice, dispatch, validate, confidence, guard
+import basis/code/choice, dispatch, validate, confidence, guard
+
+type
+  BridgeError* = object of CatchableError
+
 
 # =====================================================================================================================
 # Types
 # =====================================================================================================================
 
 type
-  AssertFactFn* = proc(fact: ParsedFact): Result[void, BridgeError] {.raises: [].}
+  AssertFactFn* = proc(fact: ParsedFact): Choice[bool] {.raises: [].}
     ## Function that inserts a parsed fact into the regula session.
 
   LlmSession* = object
@@ -35,18 +39,18 @@ proc new_llm_session*(inference_fn: InferenceFn, assert_fn: AssertFactFn,
              max_retries: max_retries)
 
 proc dispatch_and_validate*(session: var LlmSession, request: DispatchRequest,
-                            fact_type: string): Result[seq[ParsedFact], BridgeError] =
+                            fact_type: string): Choice[seq[ParsedFact]] =
   ## Dispatch to LLM, parse response, validate with guards, assert facts.
   ## Retries on guard failure up to max_retries.
   var retries = 0
   while retries <= session.max_retries:
     let response = execute_dispatch(request, session.inference_fn)
     if response.is_bad:
-      return Result[seq[ParsedFact], BridgeError].bad(response.err)
+      return bad[seq[ParsedFact]](response.err)
     inc session.dispatch_count
     let parsed = parse_kv_response(response.val, fact_type)
     if parsed.is_bad:
-      return Result[seq[ParsedFact], BridgeError].bad(parsed.err)
+      return bad[seq[ParsedFact]](parsed.err)
     if session.guards.len > 0:
       let guard_result = evaluate_guards(session.guards, response.val, parsed.val)
       if guard_result.is_bad:
@@ -57,11 +61,10 @@ proc dispatch_and_validate*(session: var LlmSession, request: DispatchRequest,
     for fact in parsed.val:
       let r = session.assert_fn(fact)
       if r.is_bad:
-        return Result[seq[ParsedFact], BridgeError].bad(r.err)
+        return bad[seq[ParsedFact]](r.err)
       inc session.assert_count
-    return Result[seq[ParsedFact], BridgeError].good(parsed.val)
-  Result[seq[ParsedFact], BridgeError].bad(
-    BridgeError(msg: "Guard validation failed after " & $session.max_retries & " retries"))
+    return good(parsed.val)
+  bad[seq[ParsedFact]]("regulallm", "Guard validation failed after " & $session.max_retries & " retries")
 
 proc stats*(session: LlmSession): tuple[dispatches: int, asserts: int, guard_fails: int] =
   (dispatches: session.dispatch_count, asserts: session.assert_count,
