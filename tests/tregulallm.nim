@@ -104,7 +104,7 @@ suite "guard":
 
   test "evaluate_guards all pass":
     let guards = @[
-      Guard(kind: gkMaxLength, max_chars: 1000)]
+      Guard(kind: GuardKind.MaxLength, max_chars: 1000)]
     let result = evaluate_guards(guards, "short response", @[])
     check result.is_good
 

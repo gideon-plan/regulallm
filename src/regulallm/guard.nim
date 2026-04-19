@@ -12,19 +12,19 @@ import basis/code/choice, validate
 # =====================================================================================================================
 
 type
-  GuardKind* = enum
-    gkRequiredFields   ## All specified fields must be present
-    gkAllowedValues    ## Field values must be in allowed set
-    gkMaxLength        ## Response must not exceed length
+  GuardKind* {.pure.} = enum
+    RequiredFields   ## All specified fields must be present
+    AllowedValues    ## Field values must be in allowed set
+    MaxLength        ## Response must not exceed length
 
   Guard* = object
     case kind*: GuardKind
-    of gkRequiredFields:
+    of GuardKind.RequiredFields:
       required*: seq[string]
-    of gkAllowedValues:
+    of GuardKind.AllowedValues:
       field*: string
       allowed*: seq[string]
-    of gkMaxLength:
+    of GuardKind.MaxLength:
       max_chars*: int
 
   GuardResult* = object
@@ -58,11 +58,11 @@ proc check_max_length*(response: string, max_chars: int): GuardResult =
 
 proc evaluate_guard*(guard: Guard, response: string, facts: seq[ParsedFact]): GuardResult =
   case guard.kind
-  of gkRequiredFields:
+  of GuardKind.RequiredFields:
     check_required_fields(facts, guard.required)
-  of gkAllowedValues:
+  of GuardKind.AllowedValues:
     check_allowed_values(facts, guard.field, guard.allowed)
-  of gkMaxLength:
+  of GuardKind.MaxLength:
     check_max_length(response, guard.max_chars)
 
 proc evaluate_guards*(guards: seq[Guard], response: string,
